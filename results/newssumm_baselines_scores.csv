@@ -1,2 +1,3 @@
 model_name,params_M,context_len,training_type,ROUGE-1,ROUGE-2,ROUGE-L,BERTScore
 LongT5,248,4096,zero-shot,0.2226,0.0592,0.1477,0.8301
+SalienceAwareLongT5,248,4096,fine-tuned,0.3196,0.1589,0.2342,0.8764

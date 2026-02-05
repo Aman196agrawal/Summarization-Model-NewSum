@@ -1,70 +1,58 @@
-import json
 import os
 import sys
-from pathlib import Path
+import json
+import argparse
+import evaluate
 
 # -------------------------------------------------
-# Make project root importable (Colab-safe)
+# Fix Python path
 # -------------------------------------------------
-PROJECT_ROOT = os.getcwd()
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.metrics import compute_metrics
 
 # -------------------------------------------------
-# CONFIG
+# Argument parsing
 # -------------------------------------------------
-MODEL_NAME = "longt5"   # change per model
+parser = argparse.ArgumentParser()
+parser.add_argument("--predictions", required=True)
+parser.add_argument("--output", required=True)
+args = parser.parse_args()
 
-PRED_FILE = f"results/{MODEL_NAME}/test_predictions.jsonl"
-TEST_FILE = "data/splits/test.jsonl"
-
-OUT_DIR = Path(f"results/phase3/{MODEL_NAME}")
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-# -------------------------------------------------
-# LOAD REFERENCE SUMMARIES
-# -------------------------------------------------
-ref_map = {}
-
-with open(TEST_FILE) as f:
-    for line in f:
-        s = json.loads(line)
-        ref_map[s["cluster_id"]] = s["summary"]  # or "human_summary"
-
-print("Loaded references:", len(ref_map))
+PRED_FILE = args.predictions
+OUT_FILE = args.output
 
 # -------------------------------------------------
-# LOAD MODEL PREDICTIONS
+# Load predictions and references
 # -------------------------------------------------
 predictions = []
 references = []
 
 with open(PRED_FILE) as f:
     for line in f:
-        s = json.loads(line)
-        cid = s["cluster_id"]
+        sample = json.loads(line)
+        predictions.append(sample["generated_summary"])
+        references.append(sample["reference_summary"])
 
-        if cid in ref_map:
-            predictions.append(s["generated_summary"])
-            references.append(ref_map[cid])
-
-print("Aligned samples:", len(predictions))
+print(f"Loaded predictions: {len(predictions)}")
+print(f"Loaded references: {len(references)}")
 
 # -------------------------------------------------
-# COMPUTE METRICS
+# Compute metrics
 # -------------------------------------------------
 metrics = compute_metrics(predictions, references)
 
-# -------------------------------------------------
-# SAVE RESULTS
-# -------------------------------------------------
-out_path = OUT_DIR / "test_metrics.json"
-with open(out_path, "w") as f:
-    json.dump(metrics, f, indent=4)
-
-print("Final TEST metrics:")
+print("\nFinal TEST metrics:")
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}")
 
-print(f"Saved to {out_path}")
+# -------------------------------------------------
+# Save metrics
+# -------------------------------------------------
+os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+
+with open(OUT_FILE, "w") as f:
+    json.dump(metrics, f, indent=2)
+
+print(f"\nSaved to {OUT_FILE}")
