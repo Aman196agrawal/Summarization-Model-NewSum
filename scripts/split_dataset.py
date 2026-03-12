@@ -6,7 +6,9 @@ INPUT_FILE = "data/newssumm_phase1.jsonl"
 OUTPUT_DIR = Path("data/splits")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-TRAIN_RATIO = 0.9
+TRAIN_RATIO = 0.8
+VAL_RATIO = 0.1
+# test gets the remaining 10%
 SEED = 42
 
 random.seed(SEED)
@@ -16,9 +18,11 @@ with open(INPUT_FILE, "r", encoding="utf-8") as f:
 
 random.shuffle(samples)
 
-split_idx = int(len(samples) * TRAIN_RATIO)
-train_samples = samples[:split_idx]
-val_samples = samples[split_idx:]
+split_train = int(len(samples) * TRAIN_RATIO)
+split_val = int(len(samples) * (TRAIN_RATIO + VAL_RATIO))
+train_samples = samples[:split_train]
+val_samples = samples[split_train:split_val]
+test_samples = samples[split_val:]
 
 def save(path, data):
     with open(path, "w", encoding="utf-8") as f:
@@ -27,5 +31,6 @@ def save(path, data):
 
 save(OUTPUT_DIR / "train.jsonl", train_samples)
 save(OUTPUT_DIR / "val.jsonl", val_samples)
+save(OUTPUT_DIR / "test.jsonl", test_samples)
 
-print(f"Train: {len(train_samples)}, Val: {len(val_samples)}")
+print(f"Train: {len(train_samples)}, Val: {len(val_samples)}, Test: {len(test_samples)}")

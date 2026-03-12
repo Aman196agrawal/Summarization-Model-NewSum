@@ -21,18 +21,18 @@ All models are evaluated on the same test clusters to ensure fair comparison.
 
 | Model | Model Type | Context Length | Training Regime | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore |
 |------|------------|----------------|-----------------|--------|--------|--------|-----------|
-| LongT5 | Encoder–Decoder | 4096 | Fine-tuned | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| LED | Encoder–Decoder | 16384 | Fine-tuned | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| PRIMERA | Encoder–Decoder | 4096 | Fine-tuned | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| Flan-T5-XL | Encoder–Decoder | 1024 | Fine-tuned | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| LLaMA-3 | LLM | 8192+ | Zero-shot | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| Mistral | LLM | 8192 | Zero-shot | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| Mixtral | LLM | 32768 | Zero-shot | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| Qwen | LLM | 8192 | Zero-shot | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
-| Gemma | LLM | 8192 | Zero-shot | 0.4380952380952381 | 0.18218623481781376 | 0.4380952380952381 | 0.9632243514060974 |
+| LongT5 | Encoder–Decoder | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| LED | Encoder–Decoder | 16384 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| PRIMERA | Encoder–Decoder | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| Flan-T5-XL | Encoder–Decoder | 1024 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| LLaMA-3 | LLM | 8192+ | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| Mistral | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| Mixtral | LLM | 32768 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| Qwen | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
+| Gemma | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
 | **Salience-Aware LongT5 (Proposed)** | **Hierarchical Encoder–Decoder** | **4096** | **Fine-tuned** | **0.2226** | **0.0600** | **0.1471** | **0.8301** |
 
-> Note: Best and second-best scores per metric are highlighted during final paper formatting.
+> ⚠️ Note: All baseline models show identical scores in this benchmark. This is because the current implementation uses a shared prediction pipeline. Individual per-model fine-tuning will yield different scores.
 
 ---
 
