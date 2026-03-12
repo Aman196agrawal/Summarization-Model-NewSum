@@ -33,10 +33,10 @@ with open(TEST_FILE) as fin, open(OUT_FILE, "w") as fout:
         sample = json.loads(line)
 
         inputs = tokenizer(
-            sample["documents"],
+            " [SEP] ".join(sample["documents"]),
             truncation=True,
             padding="max_length",
-            max_length=512,
+            max_length=4096,
             return_tensors="pt"
         ).to(device)
 
