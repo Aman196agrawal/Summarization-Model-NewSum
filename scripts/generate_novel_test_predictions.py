@@ -32,11 +32,13 @@ with open(TEST_FILE) as fin, open(OUT_FILE, "w") as fout:
     for line in fin:
         sample = json.loads(line)
 
+        # Sentence segmentation: join documents with separator token
+        input_text = " [SEP] ".join(sample["documents"])
         inputs = tokenizer(
-            sample["documents"],
+            input_text,
             truncation=True,
             padding="max_length",
-            max_length=512,
+            max_length=4096,
             return_tensors="pt"
         ).to(device)
 

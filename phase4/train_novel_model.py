@@ -33,11 +33,13 @@ def train():
         if step >= 10:  # VERY SMALL run (demo only)
             break
 
+        # Sentence segmentation: join documents with separator token
+        input_text = " [SEP] ".join(sample["documents"])
         inputs = tokenizer(
-            sample["documents"],
+            input_text,
             truncation=True,
             padding="max_length",
-            max_length=512,
+            max_length=4096,
             return_tensors="pt"
         )
 
