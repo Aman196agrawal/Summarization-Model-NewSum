@@ -81,18 +81,18 @@ See [`phase4/novel_model_spec.md`](phase4/novel_model_spec.md) for the full math
 
 Evaluated on the **NewsSumm test split** using ROUGE-1, ROUGE-2, ROUGE-L (F1), and BERTScore (F1).
 
-| Model | Type | Context | Training | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore |
-|---|---|---|---|---|---|---|---|
-| LongT5 | Enc-Dec | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| LED | Enc-Dec | 16384 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| PRIMERA | Enc-Dec | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Flan-T5-XL | Enc-Dec | 1024 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| LLaMA-3 | LLM | 8192+ | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Mistral | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Mixtral | LLM | 32768 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Qwen | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Gemma | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| **Salience-Aware LongT5 (Ours)** | **Hierarchical Enc-Dec** | **4096** | **Fine-tuned** | **0.3196** | **0.1589** | **0.2342** | **0.8764** |
+Rank | Model               | Type         | Params | Context | Training    | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore
+-----|---------------------|--------------|--------|---------|-------------|---------|---------|---------|----------
+1    | LongT5-base         | Enc-Dec      | 248M   | 4096    | Fine-tuned  | 0.4203  | 0.2011  | 0.3067  | 0.8576
+2    | LED                 | Enc-Dec      | 460M   | 16384   | Fine-tuned  | 0.3414  | 0.1633  | 0.2505  | 0.8502
+3    | PRIMERA             | Enc-Dec      | 568M   | 4096    | Fine-tuned  | 0.3585  | 0.1595  | 0.2578  | 0.8409
+4    | Flan-T5-XL          | Enc-Dec      | 3B     | 1024    | Fine-tuned  | 0.2191  | 0.1011  | 0.1698  | 0.8521
+5    | LLaMA-3 (8B)        | LLM          | 8B     | 4096    | Zero-shot   | 0.3001  | 0.1822  | 0.2809  | 0.8801
+6    | Mistral-7B          | LLM          | 7B     | 8192    | Zero-shot   | 0.2744  | 0.1176  | 0.1851  | 0.8502
+7    | Mixtral-8x7B        | MoE          | 56B    | 32768   | Zero-shot   | 0.2909  | 0.1504  | 0.1421  | 0.8591
+8    | Qwen-7B             | LLM          | 7B     | 8192    | Zero-shot   | 0.3010  | 0.1691  | 0.1018  | 0.8781
+9    | Gemma-7B            | LLM          | 7B     | 8192    | Zero-shot   | 0.3200  | 0.1381  | 0.2261  | 0.8681
+10   | SA-LongT5 (Proposed)| Hierarchical | 237M   | 4096    | Fine-tuned  | 0.3196  | 0.1589  | 0.2342  | 0.8764
 
 > See [`newssumm_benchmark.md`](newssumm_benchmark.md) for detailed quantitative and qualitative analysis.
 
