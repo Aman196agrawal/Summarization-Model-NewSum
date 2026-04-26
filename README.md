@@ -169,10 +169,19 @@ Saves bar charts to `results/plots/`.
 
 ## 📁 Data Pipeline
 
-See [`docs/data_pipeline.md`](docs/data_pipeline.md) for details on:
-- Excel → CSV → JSONL conversion
-- Cluster construction (`cluster_id = news_category + published_date`)
-- Text cleaning (HTML, URLs, whitespace normalization)
+NewsSum (348K)
+      ↓
+Cleaning
+      ↓
+Clustering
+      ↓
+NewsSum++ Full (~248K)
+      ↓
+Filtering (7–10 docs)
+      ↓
+NewsSum++ Eval (~12K)
+      ↓
+Model Benchmarking
 
 ---
 
