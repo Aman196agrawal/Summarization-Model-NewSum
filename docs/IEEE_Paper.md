@@ -1,9 +1,9 @@
 # Salience-Aware Hierarchical LongT5 for Long-Context Multi-Document News Summarization
 
 **Author:** Aman Agrawal  
-**Institution:** [Your University/College Name]  
+**Institution:** Birla Institue of Technology  
 **Department:** Department of Computer Science and Engineering  
-**Email:** aman.agrawal@university.edu  
+**Email:** aman196agrawal@gmail.com 
 **Date:** March 2026
 
 ---
