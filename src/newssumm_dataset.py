@@ -1,6 +1,9 @@
 import json
 
-class NewsSummDataset:
+from torch.utils.data import Dataset
+
+
+class NewsSummDataset(Dataset):
     """
     Dataset loader for NewsSumm multi-document summarization.
     """
