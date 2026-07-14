@@ -1661,8 +1661,8 @@ def test_filter_cluster_size_keeps_only_clusters_in_range():
 
 def test_build_newssumm_pp_end_to_end_with_fake_embedder():
     df = pd.DataFrame({
-        "article_text": [f"unique political article number {i} about elections" for i in range(7)]
-                        + [f"unique sports article number {i} about cricket matches" for i in range(7)],
+        "article_text": [f"unique political article number {i + 10} about elections" for i in range(7)]
+                        + [f"unique sports article number {i + 10} about cricket matches" for i in range(7)],
         "human_summary": [f"summary {i}" for i in range(14)],
         "headline": [f"headline {i}" for i in range(14)],
         "news_category": (["Politics"] * 7) + (["Sports"] * 7),
