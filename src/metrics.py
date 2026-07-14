@@ -44,6 +44,6 @@ def compute_metrics(predictions, references):
     return {
         "ROUGE-1": rouge_scores["rouge1"],
         "ROUGE-2": rouge_scores["rouge2"],
-        "ROUGE-L": rouge_scores["rougeL"],
+        "ROUGE-L": rouge_scores["rougeLsum"],
         "BERTScore": sum(bert_scores["f1"]) / len(bert_scores["f1"])
     }
