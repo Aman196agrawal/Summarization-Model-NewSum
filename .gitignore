@@ -1,7 +1,6 @@
-# Ignore raw data
-data/
-*.xlsx
-*.jsonl
+# Ignore raw data (except the tiny committed sample used for tests)
+data/*
+!data/sample.jsonl
 
 # Ignore Python cache
 __pycache__/
@@ -13,3 +12,10 @@ __pycache__/
 
 # BUT keep result CSVs
 !results/*.csv
+
+# Ignore JSONL data files (except the committed sample)
+*.jsonl
+!data/sample.jsonl
+
+# Ignore pytest cache
+.pytest_cache/
