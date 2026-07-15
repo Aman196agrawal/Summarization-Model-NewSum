@@ -160,13 +160,18 @@ The constrained hidden states `H' = [h'_1, ..., h'_T]` are passed to the LongT5 
 
 ### Loss Function
 
-Training uses the standard cross-entropy loss on summary tokens:
+Training uses the standard cross-entropy loss on summary tokens, combined
+with an auxiliary salience loss against greedy ROUGE-oracle sentence labels:
 
 ```
-L = L_CE(y, ŷ)
+L_sum = L_CE(y, ŷ)
+L_sal = BCE(a_i, y_i)
+L = L_sum + λ * L_sal   (λ = 1.0)
 ```
 
-An auxiliary salience loss `L_sal = BCE(a_i, y_i)` (where `y_i` are oracle salience labels) is reserved for future work (λ = 0.1). The current training uses only `L_sum = L_CE`.
+where `y_i` are oracle salience labels produced by greedy ROUGE-oracle
+labeling (see `src/salience_oracle.py`). This auxiliary loss is now actually
+computed during training, not a placeholder reserved for future work.
 
 ### Hyperparameters
 
@@ -252,7 +257,7 @@ We presented a Salience-Aware Hierarchical LongT5 model for multi-document news 
 
 Future work includes:
 
-- **Stronger supervision:** Incorporate oracle salience labels to enable the auxiliary `L_sal = BCE(a_i, y_i)` loss with λ = 0.1.
+- **Stronger supervision:** The auxiliary `L_sal = BCE(a_i, y_i)` loss against greedy ROUGE-oracle labels (λ = 1.0) is now implemented and used during training; future work should explore alternative salience supervision signals beyond ROUGE-oracle labels (e.g., human-annotated salience, or entity/discourse-informed labels).
 - **Full training:** Run the complete training pipeline (DEMO_MODE=False) with checkpoint saving and validation-based early stopping.
 - **Larger backbone:** Experiment with `google/long-t5-tglobal-large` or `google/long-t5-local-large`.
 - **Cross-lingual extension:** Adapt the pipeline for multilingual news summarization using mT5 or mBART as backbone.
