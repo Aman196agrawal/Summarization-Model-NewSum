@@ -26,7 +26,7 @@ The main contributions of this work are:
 1. A novel 3-module hierarchical encoder built on LongT5, comprising a **Salience Scoring head**, an **Entity Graph module** (NER-inspired token scoring), and a **Discourse Hierarchy module** (positional MLP scorer).
 2. A **Multi-Source Fusion layer** that combines the three weighted representations via a learned linear projection (3d → d).
 3. A **Constrained Attention mechanism** that re-weights encoder hidden states using fused salience scores before passing to the decoder — requiring no decoder surgery.
-4. An end-to-end evaluation on the **NewsSumm dataset** (Indian multi-source news clusters) with an 80/10/10 train/val/test split, reporting ROUGE-1/2/L and BERTScore F1.
+4. An end-to-end evaluation on the **NewsSumm dataset** (Indian multi-source news clusters) with a 70/15/15 train/val/test split, reporting ROUGE-1/2/L and BERTScore F1.
 
 ---
 
@@ -54,11 +54,11 @@ We evaluate on the **NewsSumm** dataset, a multi-document news summarization dat
 - `documents`: A list of news article texts from different sources covering the same event
 - `summary`: A human-written reference summary
 
-The dataset is stored in JSONL format (`data/newssumm_phase1.jsonl`), with each line being a JSON object. We split the data into train/val/test using an **80/10/10 split** (seeded with `random.seed(42)` for reproducibility):
+The dataset is stored in JSONL format (`data/newssumm_phase1.jsonl`), with each line being a JSON object. We split the data into train/val/test using a **70/15/15 split** (seeded with `random.seed(42)` for reproducibility):
 
-- **Train:** 80% of samples
-- **Validation:** 10% of samples
-- **Test:** 10% of samples
+- **Train:** 70% of samples
+- **Validation:** 15% of samples
+- **Test:** 15% of samples
 
 Splits are saved to `data/splits/train.jsonl`, `data/splits/val.jsonl`, and `data/splits/test.jsonl`.
 
@@ -66,9 +66,9 @@ Splits are saved to `data/splits/train.jsonl`, `data/splits/val.jsonl`, and `dat
 
 | Split | Samples | Avg. Documents/Cluster | Avg. Input Tokens ([SEP]-joined) | Avg. Summary Tokens |
 |---|---|---|---|---|
-| Train | ~80% of total | ~3–5 | ~1,200 | ~80 |
-| Validation | ~10% of total | ~3–5 | ~1,200 | ~80 |
-| Test | ~10% of total | ~3–5 | ~1,200 | ~80 |
+| Train | ~70% of total | ~3–5 | ~1,200 | ~80 |
+| Validation | ~15% of total | ~3–5 | ~1,200 | ~80 |
+| Test | ~15% of total | ~3–5 | ~1,200 | ~80 |
 
 *Note: Token counts are approximate and based on the LongT5 tokenizer with max_length=4096.*
 
@@ -181,8 +181,8 @@ An auxiliary salience loss `L_sal = BCE(a_i, y_i)` (where `y_i` are oracle salie
 | Full training steps | No limit (DEMO_MODE=False) |
 | Checkpoint interval | Every 100 steps |
 | Random seed | 42 |
-| λ (auxiliary salience loss) | 0.1 (reserved for future use) |
-| Document separator | `[SEP]` |
+| λ (auxiliary salience loss) | 1.0 (now actually computed via greedy ROUGE-oracle labels, see src/salience_oracle.py) |
+| Document separator | `</s>` (tokenizer's real end-of-sequence token) |
 | Batch size | 1 (per-sample iteration) |
 
 ---
@@ -203,6 +203,15 @@ We evaluate all models using the following metrics:
 ## VI. Results
 
 The following table presents benchmark results on the NewsSumm test split. All metric values are reported as F1 scores, rounded to 4 decimal places.
+
+> **Status:** the model, training, and generation code this table's
+> "Proposed" row was originally produced by has since been rewritten (see
+> the accompanying repository) to fix a bug where generation bypassed the
+> salience-aware forward pass entirely and used an untrained model. The
+> baseline rows below reflect ad hoc exploratory runs on small subsets with
+> per-model decoding settings, not one unified evaluation protocol. Treat
+> this table as preliminary pending a full, unified re-run of the fixed
+> pipeline.
 
 Rank | Model               | Type         | Params | Context | Training    | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore
 -----|---------------------|--------------|--------|---------|-------------|---------|---------|---------|----------
@@ -239,7 +248,7 @@ Despite lower ROUGE, the proposed model achieves a competitive BERTScore of 0.83
 
 ## VIII. Conclusion and Future Work
 
-We presented a Salience-Aware Hierarchical LongT5 model for multi-document news summarization that incorporates three complementary signals — token salience, entity importance, and discourse hierarchy — fused via a learned projection and constrained attention mechanism. The model is evaluated on the NewsSumm dataset with an 80/10/10 train/val/test split. This work demonstrates that explicit salience modeling — through entity, discourse, and token-level scoring — can be effectively integrated into a long-context encoder-decoder architecture without requiring modifications to the decoder. The proposed Constrained Attention mechanism is modular and applicable to other transformer-based summarization backbones beyond LongT5.
+We presented a Salience-Aware Hierarchical LongT5 model for multi-document news summarization that incorporates three complementary signals — token salience, entity importance, and discourse hierarchy — fused via a learned projection and constrained attention mechanism. The model is evaluated on the NewsSumm dataset with a 70/15/15 train/val/test split. This work demonstrates that explicit salience modeling — through entity, discourse, and token-level scoring — can be effectively integrated into a long-context encoder-decoder architecture without requiring modifications to the decoder. The proposed Constrained Attention mechanism is modular and applicable to other transformer-based summarization backbones beyond LongT5.
 
 Future work includes:
 
