@@ -16,34 +16,51 @@ FIXED_CATEGORIES = [
 ]
 
 _CATEGORY_KEYWORDS = [
+    ("politics", "politics"),
+    ("political", "politics"),
+    ("politician", "politics"),
     ("politic", "politics"),
     ("business", "business"),
     ("economy", "economy"),
+    ("economic", "economy"),
+    ("technology", "technology"),
+    ("technical", "technology"),
     ("tech", "technology"),
     ("ai", "technology"),
     ("science", "science"),
+    ("scientific", "science"),
     ("health", "health"),
+    ("sports", "sports"),
+    ("sporting", "sports"),
     ("sport", "sports"),
     ("cricket", "sports"),
+    ("entertainment", "entertainment"),
+    ("entertaining", "entertainment"),
     ("entertain", "entertainment"),
     ("movie", "entertainment"),
     ("world", "world"),
     ("international", "world"),
     ("education", "education"),
+    ("educational", "education"),
     ("climate", "environment"),
     ("environment", "environment"),
+    ("environmental", "environment"),
     ("crime", "crime"),
+    ("criminal", "crime"),
     ("law", "law"),
+    ("legal", "law"),
     ("court", "law"),
     ("defense", "defense"),
     ("military", "defense"),
     ("travel", "travel"),
     ("lifestyle", "lifestyle"),
     ("culture", "culture"),
+    ("cultural", "culture"),
     ("opinion", "opinion"),
     ("editorial", "opinion"),
     ("weather", "weather"),
     ("finance", "finance"),
+    ("financial", "finance"),
     ("stock", "finance"),
     ("energy", "energy"),
     ("media", "media"),
@@ -61,7 +78,7 @@ def clean_text(text):
 def map_category(text):
     text = str(text).lower()
     for keyword, category in _CATEGORY_KEYWORDS:
-        if keyword in text:
+        if re.search(r"\b" + re.escape(keyword) + r"\b", text):
             return category
     return "other"
 

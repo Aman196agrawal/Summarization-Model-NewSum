@@ -19,6 +19,9 @@ def test_map_category_matches_known_keywords():
     assert map_category("Local Politics News") == "politics"
     assert map_category("Cricket World Cup Final") == "sports"
     assert map_category("Completely unrelated topic xyz") == "other"
+    # Regression: "ai" must match only as a whole word, not as a mid-word
+    # substring of ordinary words like "said"/"campaign" (word-boundary fix).
+    assert map_category("He said the campaign would continue") == "other"
 
 
 def test_remove_nulls_and_duplicates_drops_null_empty_and_duplicate_rows():
