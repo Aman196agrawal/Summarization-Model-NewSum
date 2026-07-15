@@ -22,6 +22,14 @@ def test_map_category_matches_known_keywords():
     # Regression: "ai" must match only as a whole word, not as a mid-word
     # substring of ordinary words like "said"/"campaign" (word-boundary fix).
     assert map_category("He said the campaign would continue") == "other"
+    # Regression: plural/inflected forms must still match after switching to
+    # strict word-boundary matching (previously covered by substring matching).
+    assert map_category("Rising crimes in the city") == "crime"
+    assert map_category("New laws passed by the government") == "law"
+    assert map_category("The courts will decide the case") == "law"
+    assert map_category("Local businesses struggle") == "business"
+    assert map_category("The team's defenses were tested today") == "defense"
+    assert map_category("Latest movies released this year") == "entertainment"
 
 
 def test_remove_nulls_and_duplicates_drops_null_empty_and_duplicate_rows():
