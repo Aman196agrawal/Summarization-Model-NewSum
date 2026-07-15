@@ -30,6 +30,8 @@ def test_map_category_matches_known_keywords():
     assert map_category("Local businesses struggle") == "business"
     assert map_category("The team's defenses were tested today") == "defense"
     assert map_category("Latest movies released this year") == "entertainment"
+    assert map_category("Several criminals were arrested today") == "crime"
+    assert map_category("Editorials criticized the new policy") == "opinion"
 
 
 def test_remove_nulls_and_duplicates_drops_null_empty_and_duplicate_rows():
