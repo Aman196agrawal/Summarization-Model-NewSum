@@ -124,6 +124,9 @@ class SalienceAwareLongT5(nn.Module):
         if salience_labels is not None:
             reconciled = self._reconcile_salience_labels(salience_labels, alpha.shape[1])
             probs = alpha.clamp(min=1e-7, max=1 - 1e-7)
+            # alpha sums to 1 across sentences (softmax); BCE treats each independently -- this is
+            # the report's literal formulation (softmax salience + BCE loss), not a claim that
+            # multiple sentences can be simultaneously highly salient.
             bce = F.binary_cross_entropy(probs, reconciled, reduction="none")
             bce = bce * sentence_mask.float()
             denom = sentence_mask.float().sum().clamp(min=1.0)

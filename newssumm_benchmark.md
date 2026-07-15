@@ -34,6 +34,8 @@ All models are evaluated on the same test clusters to ensure fair comparison.
 
 ## 3. Quantitative Analysis
 
+*The analysis below describes anticipated/exploratory findings from before this repository's pipeline was fixed and is not yet backed by a real run of the current code (see the Status note in Section 2). Treat as hypotheses to verify, not established results.*
+
 Large language models such as Mixtral and LLaMA-based systems achieve strong ROUGE scores due to their extensive pretraining and long-context handling capabilities. Encoder–decoder models like LongT5 and LED perform competitively when fine-tuned on the dataset.
 
 The proposed **Salience-Aware LongT5** model does not outperform all baselines in terms of ROUGE scores. However, it demonstrates competitive semantic similarity as measured by BERTScore, despite being trained using a lightweight fine-tuning strategy.

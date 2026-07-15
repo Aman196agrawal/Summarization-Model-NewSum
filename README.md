@@ -28,7 +28,7 @@ Summarization-Model-NewSum/
 ├── scripts/
 │   ├── build_newssumm_pp.py       # Build NewsSumm++ clustered dataset
 │   ├── split_dataset.py           # Train/val/test split (70/15/15, cluster-level)
-│   ├── prepare_inputs.py          # Build [DOC]-delimited model inputs
+│   ├── prepare_inputs.py          # Preview </s>-joined model input construction
 │   ├── generate_test_predictions.py       # Generate predictions (LongT5 baseline)
 │   ├── generate_novel_test_predictions.py # Generate predictions (Proposed model)
 │   ├── evaluate_test_split.py     # Evaluate predictions against references
@@ -39,11 +39,9 @@ Summarization-Model-NewSum/
 │   ├── novel_model_spec.md        # Architecture specification & math formulation
 │   └── train_novel_model.py       # Training loop for proposed model
 │
-├── results/
-│   ├── metrics_all_models.json    # All baseline metrics (JSON)
-│   ├── metrics_all_models.csv     # All baseline metrics (CSV)
-│   ├── phase3/longt5/test_metrics.json
-│   └── phase4/novel/test_metrics.json
+├── results/                        # created by running the pipeline (see Usage below) --
+│                                    # not checked into the repo; results/<model_tag>/test_metrics.json
+│                                    # appears here for each model once you've run the scripts
 │
 ├── docs/
 │   ├── data_pipeline.md           # Data preprocessing pipeline documentation
@@ -61,7 +59,7 @@ The proposed model extends LongT5 with a **salience prediction head** that score
 
 **Architecture:**
 - **Backbone:** `google/long-t5-tglobal-base` (encoder-decoder)
-- **Salience head:** Linear layer → sigmoid, predicting per-sentence importance
+- **Salience head:** Linear layer → softmax (normalized across all sentences in the cluster), predicting relative per-sentence importance
 - **Training loss:** `L = L_summarization + λ * L_salience` (λ = 1.0), with
   `L_salience` a real BCE loss against greedy ROUGE-oracle sentence labels
   (see `src/salience_oracle.py`) -- not a placeholder.
@@ -153,13 +151,14 @@ python phase4/train_novel_model.py
 ```bash
 python scripts/generate_novel_test_predictions.py
 ```
-Output: `results/phase4/novel/test_predictions.jsonl`
+Output: `results/sa_longt5/test_predictions.jsonl`
+(Requires a trained checkpoint at `results/sa_longt5/checkpoints/model_final.pt` -- run step 3 first.)
 
 ### 5. Evaluate
 ```bash
 python scripts/evaluate_test_split.py \
-  --predictions results/phase4/novel/test_predictions.jsonl \
-  --output results/phase4/novel/test_metrics.json
+  --predictions results/sa_longt5/test_predictions.jsonl \
+  --output results/sa_longt5/test_metrics.json
 ```
 
 ---
