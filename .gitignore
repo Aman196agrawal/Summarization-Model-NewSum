@@ -13,3 +13,6 @@ __pycache__/
 
 # BUT keep result CSVs
 !results/*.csv
+
+# Local planning artifacts -- never pushed
+docs/dev-notes/
