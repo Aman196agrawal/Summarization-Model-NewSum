@@ -19,3 +19,6 @@ __pycache__/
 
 # Ignore pytest cache
 .pytest_cache/
+
+# Local planning notes -- not part of the published project
+docs/dev-notes/
