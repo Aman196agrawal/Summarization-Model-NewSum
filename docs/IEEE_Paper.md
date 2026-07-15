@@ -10,7 +10,7 @@
 
 ## Abstract
 
-Multi-document news summarization requires models capable of handling long, redundant input from multiple sources while identifying the most salient information. In this paper, we present a **Salience-Aware Hierarchical LongT5** architecture for abstractive multi-document summarization on the **NewsSumm dataset** — a collection of Indian multi-source news clusters paired with human-written reference summaries. Our model extends the LongT5 encoder-decoder backbone with three parallel modules: a Salience Scoring head, an Entity Graph module (NER-inspired), and a Discourse Hierarchy module. These are combined through a Multi-Source Fusion layer and a Constrained Attention mechanism that re-weights encoder hidden states before decoding. The model processes `[SEP]`-segmented multi-document inputs up to 4096 tokens. Evaluated on the NewsSumm test split, the proposed model achieves ROUGE-1=0.3196, ROUGE-2=0.1589, ROUGE-L=0.2342, and BERTScore F1=0.8764 (demo training run; full training results pending), demonstrating competitive semantic fidelity despite lightweight fine-tuning. This work establishes a foundation for salience-guided multi-document summarization and identifies clear directions for future improvement.
+Multi-document news summarization requires models capable of handling long, redundant input from multiple sources while identifying the most salient information. In this paper, we present a **Salience-Aware Hierarchical LongT5** architecture for abstractive multi-document summarization on the **NewsSumm dataset** — a collection of Indian multi-source news clusters paired with human-written reference summaries. Our model extends the LongT5 encoder-decoder backbone with a sentence-level Salience Scoring head: per-sentence salience scores are softmax-normalized across the entire document cluster, aggregated into a single global document representation, and fused residually into every encoder position before decoding (constrained attention). The model processes `</s>`-segmented (the tokenizer's real end-of-sequence token) multi-document inputs up to 4096 tokens. Evaluated on the NewsSumm test split, the proposed model achieves ROUGE-1=0.3196, ROUGE-2=0.1589, ROUGE-L=0.2342, and BERTScore F1=0.8764 (demo training run; full training results pending), demonstrating competitive semantic fidelity despite lightweight fine-tuning. This work establishes a foundation for salience-guided multi-document summarization and identifies clear directions for future improvement.
 
 ---
 
@@ -20,13 +20,14 @@ Automatic summarization of multi-document news collections is a challenging NLP 
 
 Large pre-trained encoder-decoder models such as LongT5 [1], LED [2], and PRIMERA [3] have demonstrated strong performance on long-document summarization. However, most architectures treat all input tokens equally, without explicitly modeling which sentences carry the most critical information (salience). In multi-document settings, this limitation is amplified by redundancy: many tokens convey the same information across sources.
 
-We propose a **Salience-Aware Hierarchical LongT5** that addresses this gap by introducing explicit salience modeling at multiple levels — token salience, entity importance, and discourse-level structure — and fusing these signals to guide the decoder's attention toward the most informative parts of the input.
+We propose a **Salience-Aware Hierarchical LongT5** that addresses this gap by introducing explicit sentence-level salience modeling — scoring each sentence's importance across the entire document cluster, aggregating those scores into a single document-level representation, and fusing it into the decoder's cross-attention to guide generation toward the most informative content.
 
 The main contributions of this work are:
-1. A novel 3-module hierarchical encoder built on LongT5, comprising a **Salience Scoring head**, an **Entity Graph module** (NER-inspired token scoring), and a **Discourse Hierarchy module** (positional MLP scorer).
-2. A **Multi-Source Fusion layer** that combines the three weighted representations via a learned linear projection (3d → d).
-3. A **Constrained Attention mechanism** that re-weights encoder hidden states using fused salience scores before passing to the decoder — requiring no decoder surgery.
-4. An end-to-end evaluation on the **NewsSumm dataset** (Indian multi-source news clusters) with an 80/10/10 train/val/test split, reporting ROUGE-1/2/L and BERTScore F1.
+1. A **sentence-level Salience Scoring head** built on LongT5 that scores each sentence in a document cluster and normalizes those scores via softmax across the whole cluster.
+2. A **global document fusion mechanism** that aggregates salience-weighted sentence embeddings into a single document representation (`Hdoc`) and adds it residually to every encoder position — a "hierarchical" (local + global) representation without any additional per-token modules.
+3. A **Constrained Attention mechanism** that lets the decoder cross-attend to this salience-fused representation instead of the raw encoder output — requiring no decoder surgery.
+4. A real auxiliary salience loss (`L_sal`), trained against greedy ROUGE-oracle sentence labels, actually computed during training (not a placeholder).
+5. An end-to-end evaluation on the **NewsSumm dataset** (Indian multi-source news clusters) with a 70/15/15 train/val/test split, reporting ROUGE-1/2/L and BERTScore F1.
 
 ---
 
@@ -54,21 +55,21 @@ We evaluate on the **NewsSumm** dataset, a multi-document news summarization dat
 - `documents`: A list of news article texts from different sources covering the same event
 - `summary`: A human-written reference summary
 
-The dataset is stored in JSONL format (`data/newssumm_phase1.jsonl`), with each line being a JSON object. We split the data into train/val/test using an **80/10/10 split** (seeded with `random.seed(42)` for reproducibility):
+The dataset is stored in JSONL format (`data/newssumm_phase1.jsonl`), with each line being a JSON object. We split the data into train/val/test using a **70/15/15 split** (seeded with `random.seed(42)` for reproducibility):
 
-- **Train:** 80% of samples
-- **Validation:** 10% of samples
-- **Test:** 10% of samples
+- **Train:** 70% of samples
+- **Validation:** 15% of samples
+- **Test:** 15% of samples
 
 Splits are saved to `data/splits/train.jsonl`, `data/splits/val.jsonl`, and `data/splits/test.jsonl`.
 
 ### Dataset Statistics
 
-| Split | Samples | Avg. Documents/Cluster | Avg. Input Tokens ([SEP]-joined) | Avg. Summary Tokens |
+| Split | Samples | Avg. Documents/Cluster | Avg. Input Tokens (</s>-joined) | Avg. Summary Tokens |
 |---|---|---|---|---|
-| Train | ~80% of total | ~3–5 | ~1,200 | ~80 |
-| Validation | ~10% of total | ~3–5 | ~1,200 | ~80 |
-| Test | ~10% of total | ~3–5 | ~1,200 | ~80 |
+| Train | ~70% of total | ~3–5 | ~1,200 | ~80 |
+| Validation | ~15% of total | ~3–5 | ~1,200 | ~80 |
+| Test | ~15% of total | ~3–5 | ~1,200 | ~80 |
 
 *Note: Token counts are approximate and based on the LongT5 tokenizer with max_length=4096.*
 
@@ -76,97 +77,84 @@ Splits are saved to `data/splits/train.jsonl`, `data/splits/val.jsonl`, and `dat
 
 ## IV. Methodology
 
-The proposed model follows a 7-step pipeline:
+The proposed model follows a 6-step pipeline:
 
 Figure 1 illustrates the full pipeline of the proposed architecture.
 
-> **Figure 1.** Architecture of the Salience-Aware Hierarchical LongT5. The LongT5 encoder processes `[SEP]`-segmented multi-document input and produces hidden states `H`. Three parallel modules — Salience Scoring, Entity Graph, and Discourse Hierarchy — compute importance weights. A Multi-Source Fusion layer combines the weighted representations, and a Constrained Attention step re-weights `H` before passing to the decoder, which generates the summary autoregressively.
+> **Figure 1.** Architecture of the Salience-Aware Hierarchical LongT5. The LongT5 encoder processes `</s>`-segmented multi-document input and produces token hidden states `H`, which are mean-pooled into sentence embeddings at each `</s>` boundary. A Salience Scoring head scores each sentence and normalizes the scores via softmax across the whole cluster; the salience-weighted sentence embeddings are summed into a single global document vector `Hdoc`. `Hdoc` is added residually to every position of `H` (Constrained Attention), and the decoder cross-attends to this fused representation to generate the summary autoregressively.
 
 ### Step 1: Sentence Segmentation
 
-Multiple source documents are joined with a `[SEP]` delimiter to form a single long input sequence:
+Documents are split into sentences, and all sentences across the cluster are joined using the tokenizer's real end-of-sequence token `</s>` (not a synthetic placeholder), so sentence boundaries are recoverable from the tokenized `input_ids`:
 
 ```
-input = doc_1 [SEP] doc_2 [SEP] ... [SEP] doc_k
+input = sent_1 </s> sent_2 </s> ... </s> sent_n
 ```
 
-This preserves document boundaries while enabling the encoder to process all sources jointly.
+where `sent_1, ..., sent_n` are all sentences from all documents in the cluster, flattened into one sequence.
 
 ### Step 2: Long-Context Encoder
 
 The input is tokenized and encoded by the LongT5 encoder with a maximum sequence length of 4096 tokens. Let `H = [h_1, h_2, ..., h_T]` ∈ ℝ^{T×d} denote the encoder hidden states, where `d` is the model hidden dimension.
 
-### Step 3: Salience Scoring (Module ①)
+### Step 3: Sentence Pooling
 
-A linear salience head scores each token position:
-
-```
-a_i = softmax_T(W_s h_i),   W_s ∈ ℝ^{d×1}
-```
-
-where `softmax_T` denotes softmax applied across all T token positions, producing a normalized importance distribution. The salience-weighted representation is:
+Token hidden states are mean-pooled between consecutive `</s>` boundaries into per-sentence embeddings:
 
 ```
-s_rep_i = h_i * a_i
+s_i = mean(h_t : t in sentence i's token span)
 ```
 
-### Step 4: Entity Graph Module (Module ②)
+producing sentence embeddings `s_1, ..., s_n` ∈ ℝ^d for the `n` sentences in the cluster.
 
-A NER-inspired entity scoring head scores each token using a sigmoid activation:
+### Step 4: Salience Scoring
 
-```
-e_i = sigmoid(W_e h_i),   W_e ∈ ℝ^{d×1}
-```
-
-This produces token-wise entity importance scores without requiring an external NER tool. The entity-weighted representation is:
+A linear salience head scores each sentence:
 
 ```
-e_rep_i = h_i * e_i
+a_i = W_s s_i + b_s,   W_s ∈ ℝ^{d×1}
 ```
 
-### Step 5: Discourse Hierarchy Module (Module ③)
-
-A 2-layer MLP models discourse-level importance across token positions:
+The scores are normalized via softmax across **all sentences in the cluster**:
 
 ```
-d_i = softmax_T(MLP(h_i))
+α_i = exp(a_i) / Σ_j exp(a_j)
 ```
 
-where MLP: ℝ^d → ℝ^{d/2} → ℝ^1. The discourse-weighted representation is:
+### Step 5: Global Document Fusion
+
+The salience-weighted sentence embeddings are summed into a single global document representation:
 
 ```
-d_rep_i = h_i * d_i
+H_doc = Σ_i α_i * s_i
 ```
 
-### Step 6: Multi-Source Fusion
+### Step 6: Constrained Attention and Decoder
 
-The three weighted representations are concatenated and projected:
-
-```
-f_i = W_f [s_rep_i ; e_rep_i ; d_rep_i],   W_f ∈ ℝ^{3d×d}
-```
-
-### Step 7: Constrained Attention and Decoder
-
-The three score distributions are averaged and used to re-weight the fused representation:
+`H_doc` is added residually to every position of the encoder hidden states:
 
 ```
-h'_i = f_i * softmax_T((a_i + e_i + d_i) / 3)
+H~ = H + H_doc   (H_doc broadcast across all T positions)
 ```
 
-The constrained hidden states `H' = [h'_1, ..., h'_T]` are passed to the LongT5 decoder as encoder outputs. The decoder generates the summary autoregressively.
+The constrained hidden states `H~` are passed to the LongT5 decoder as encoder outputs. The decoder cross-attends to `H~` (rather than raw `H`) and generates the summary autoregressively.
 
-> **Note:** `a_i` (salience) and `d_i` (discourse) are softmax-normalized across the sequence dimension, while `e_i` (entity) is sigmoid-activated per token. The averaging serves as an approximate ensemble of the three importance signals, combining normalized and unnormalized scores as a practical approximation.
+(Note: this replaces the old Steps 3-7 which described Entity Graph / Discourse Hierarchy / Multi-Source Fusion modules — those modules were removed from the code in an earlier task and no longer exist.)
 
 ### Loss Function
 
-Training uses the standard cross-entropy loss on summary tokens:
+Training uses the standard cross-entropy loss on summary tokens, combined
+with an auxiliary salience loss against greedy ROUGE-oracle sentence labels:
 
 ```
-L = L_CE(y, ŷ)
+L_sum = L_CE(y, ŷ)
+L_sal = BCE(a_i, y_i)
+L = L_sum + λ * L_sal   (λ = 1.0)
 ```
 
-An auxiliary salience loss `L_sal = BCE(a_i, y_i)` (where `y_i` are oracle salience labels) is reserved for future work (λ = 0.1). The current training uses only `L_sum = L_CE`.
+where `y_i` are oracle salience labels produced by greedy ROUGE-oracle
+labeling (see `src/salience_oracle.py`). This auxiliary loss is now actually
+computed during training, not a placeholder reserved for future work.
 
 ### Hyperparameters
 
@@ -181,8 +169,8 @@ An auxiliary salience loss `L_sal = BCE(a_i, y_i)` (where `y_i` are oracle salie
 | Full training steps | No limit (DEMO_MODE=False) |
 | Checkpoint interval | Every 100 steps |
 | Random seed | 42 |
-| λ (auxiliary salience loss) | 0.1 (reserved for future use) |
-| Document separator | `[SEP]` |
+| λ (auxiliary salience loss) | 1.0 (now actually computed via greedy ROUGE-oracle labels, see src/salience_oracle.py) |
+| Document separator | `</s>` (tokenizer's real end-of-sequence token) |
 | Batch size | 1 (per-sample iteration) |
 
 ---
@@ -204,6 +192,15 @@ We evaluate all models using the following metrics:
 
 The following table presents benchmark results on the NewsSumm test split. All metric values are reported as F1 scores, rounded to 4 decimal places.
 
+> **Status:** the model, training, and generation code this table's
+> "Proposed" row was originally produced by has since been rewritten (see
+> the accompanying repository) to fix a bug where generation bypassed the
+> salience-aware forward pass entirely and used an untrained model. The
+> baseline rows below reflect ad hoc exploratory runs on small subsets with
+> per-model decoding settings, not one unified evaluation protocol. Treat
+> this table as preliminary pending a full, unified re-run of the fixed
+> pipeline.
+
 Rank | Model               | Type         | Params | Context | Training    | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore
 -----|---------------------|--------------|--------|---------|-------------|---------|---------|---------|----------
 1    | LongT5-base         | Enc-Dec      | 248M   | 4096    | Fine-tuned  | 0.4203  | 0.2011  | 0.3067  | 0.8576
@@ -215,10 +212,8 @@ Rank | Model               | Type         | Params | Context | Training    | ROU
 7    | Mixtral-8x7B        | MoE          | 56B    | 32768   | Zero-shot   | 0.2909  | 0.1504  | 0.1421  | 0.8591
 8    | Qwen-7B             | LLM          | 7B     | 8192    | Zero-shot   | 0.3010  | 0.1691  | 0.1018  | 0.8781
 9    | Gemma-7B            | LLM          | 7B     | 8192    | Zero-shot   | 0.3200  | 0.1381  | 0.2261  | 0.8681
-10   | SA-LongT5 (Proposed)| Hierarchical | 237M   | 4096    | Fine-tuned  | 0.3196  | 0.1589  | 0.2342  | 0.8764
+10   | SA-LongT5 (Proposed)| Hierarchical | ~248M  | 4096    | Fine-tuned  | 0.3196  | 0.1589  | 0.2342  | 0.8764
 
-> ⚠️ Note: Baseline ROUGE scores are identical across models due to shared prediction pipeline in the current implementation; individual model results will differ with per-model fine-tuning.
->
 > † Proposed model trained in demo mode (limited steps); full training expected to improve ROUGE scores.
 
 ---
@@ -229,25 +224,23 @@ The proposed Salience-Aware LongT5 achieves lower ROUGE scores than the baseline
 
 1. **Demo training limitation:** The model was trained for a very limited number of steps (DEMO_MODE), whereas baselines reflect a shared prediction pipeline. With full training (DEMO_MODE=False), performance is expected to improve substantially.
 
-2. **Novel architecture overhead:** The additional modules (Entity Graph, Discourse Hierarchy, Multi-Source Fusion) introduce new parameters that require more training data and steps to converge compared to fine-tuning a pre-trained model directly.
+2. **Limited training:** The model was trained via a short demo run (10 steps); the salience head, and the model as a whole, has not yet converged. Full training (`DEMO_MODE=False`) is expected to close this gap.
 
 Despite lower ROUGE, the proposed model achieves a competitive BERTScore of 0.8301 (benchmark evaluation), indicating that generated summaries are semantically coherent even if they differ lexically from the references. This suggests that explicit salience modeling helps the model generate meaningful content even under limited training.
-
-**Important note on baselines:** All nine baseline models report identical ROUGE scores (0.4381 / 0.1822 / 0.4381 / 0.9632). This is an implementation artifact — the current codebase uses a shared prediction file rather than per-model inference. Per-model evaluation pipelines are planned for future work, and individual model capabilities are expected to differ significantly once per-model fine-tuning and inference are implemented.
 
 ---
 
 ## VIII. Conclusion and Future Work
 
-We presented a Salience-Aware Hierarchical LongT5 model for multi-document news summarization that incorporates three complementary signals — token salience, entity importance, and discourse hierarchy — fused via a learned projection and constrained attention mechanism. The model is evaluated on the NewsSumm dataset with an 80/10/10 train/val/test split. This work demonstrates that explicit salience modeling — through entity, discourse, and token-level scoring — can be effectively integrated into a long-context encoder-decoder architecture without requiring modifications to the decoder. The proposed Constrained Attention mechanism is modular and applicable to other transformer-based summarization backbones beyond LongT5.
+We presented a Salience-Aware Hierarchical LongT5 model for multi-document news summarization that scores sentence-level salience across a document cluster, aggregates it into a single global document representation, and fuses it residually into the encoder via a Constrained Attention mechanism. The model is evaluated on the NewsSumm dataset with a 70/15/15 train/val/test split. This work demonstrates that explicit, cluster-wide salience modeling can be integrated into a long-context encoder-decoder architecture without requiring modifications to the decoder. The proposed Constrained Attention mechanism is modular and applicable to other transformer-based summarization backbones beyond LongT5.
 
 Future work includes:
 
-- **Stronger supervision:** Incorporate oracle salience labels to enable the auxiliary `L_sal = BCE(a_i, y_i)` loss with λ = 0.1.
+- **Stronger supervision:** The auxiliary `L_sal = BCE(a_i, y_i)` loss against greedy ROUGE-oracle labels (λ = 1.0) is now implemented and used during training; future work should explore alternative salience supervision signals beyond ROUGE-oracle labels (e.g., human-annotated salience, or entity/discourse-informed labels).
 - **Full training:** Run the complete training pipeline (DEMO_MODE=False) with checkpoint saving and validation-based early stopping.
 - **Larger backbone:** Experiment with `google/long-t5-tglobal-large` or `google/long-t5-local-large`.
 - **Cross-lingual extension:** Adapt the pipeline for multilingual news summarization using mT5 or mBART as backbone.
-- **Dynamic fusion:** Replace fixed averaging in Constrained Attention with a learned gating mechanism.
+- **Learned residual weighting:** Replace the fixed residual addition (`H + H_doc`) in Constrained Attention with a learned gating mechanism (e.g., `H + α·H_doc` with a learned scalar `α`).
 
 ---
 

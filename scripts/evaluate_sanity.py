@@ -5,6 +5,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from src.metrics import compute_metrics
 
+
 def main():
     # Dummy predictions (simulate model output)
     predictions = [
@@ -20,9 +21,11 @@ def main():
 
     metrics = compute_metrics(predictions, references)
 
-    print("Sanity Evaluation Metrics:")
+    print("Sanity Evaluation Metrics (2-example dummy check only -- NOT real")
+    print("results; never copy these numbers into results/*/test_metrics.json):")
     for k, v in metrics.items():
         print(f"{k}: {v:.4f}")
+
 
 if __name__ == "__main__":
     main()

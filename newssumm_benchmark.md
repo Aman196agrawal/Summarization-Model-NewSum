@@ -19,24 +19,22 @@ All models are evaluated on the same test clusters to ensure fair comparison.
 
 ## 2. Benchmark Results Table
 
-| Model | Model Type | Context Length | Training Regime | ROUGE-1 | ROUGE-2 | ROUGE-L | BERTScore |
-|------|------------|----------------|-----------------|--------|--------|--------|-----------|
-| LongT5 | Encoder–Decoder | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| LED | Encoder–Decoder | 16384 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| PRIMERA | Encoder–Decoder | 4096 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Flan-T5-XL | Encoder–Decoder | 1024 | Fine-tuned | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| LLaMA-3 | LLM | 8192+ | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Mistral | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Mixtral | LLM | 32768 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Qwen | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| Gemma | LLM | 8192 | Zero-shot | 0.4381 | 0.1822 | 0.4381 | 0.9632 |
-| **Salience-Aware LongT5 (Proposed)** | **Hierarchical Encoder–Decoder** | **4096** | **Fine-tuned** | **0.2226** | **0.0600** | **0.1471** | **0.8301** |
-
-> ⚠️ Note: All baseline models show identical scores in this benchmark. This is because the current implementation uses a shared prediction pipeline. Individual per-model fine-tuning will yield different scores.
+> **Status:** the numbers previously in this table were identical across all
+> nine baseline models (0.4381 / 0.1822 / 0.4381 / 0.9632) because they were
+> accidentally copied from `scripts/evaluate_sanity.py`'s 2-example dummy
+> check rather than produced by real per-model runs -- see
+> `scripts/evaluate_sanity.py`'s updated warning. That table has been removed
+> rather than left in place. Real per-model results will be added here once
+> `results/<model_tag>/test_metrics.json` exists for each model from an
+> actual run of `scripts/generate_test_predictions.py` /
+> `scripts/generate_novel_test_predictions.py` on the real NewsSumm++ test
+> split -- not reproduced from this repo yet.
 
 ---
 
 ## 3. Quantitative Analysis
+
+*The analysis below describes anticipated/exploratory findings from before this repository's pipeline was fixed and is not yet backed by a real run of the current code (see the Status note in Section 2). Treat as hypotheses to verify, not established results.*
 
 Large language models such as Mixtral and LLaMA-based systems achieve strong ROUGE scores due to their extensive pretraining and long-context handling capabilities. Encoder–decoder models like LongT5 and LED perform competitively when fine-tuned on the dataset.
 
