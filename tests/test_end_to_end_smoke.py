@@ -5,11 +5,10 @@ from torch.optim import AdamW
 from transformers import LongT5Config, LongT5ForConditionalGeneration, T5Tokenizer
 
 from src.novel_newssumm_model import SalienceAwareLongT5
-from src.sentence_utils import build_cluster_input
-from src.salience_oracle import compute_oracle_labels
 from src.metrics import compute_metrics
 from scripts.split_dataset import split_samples
 from scripts.generate_novel_test_predictions import generate_predictions
+from phase4.train_novel_model import prepare_batch
 
 
 def _tiny_base_model(vocab_size):
@@ -47,24 +46,13 @@ def test_full_pipeline_runs_on_sample_data_with_a_tiny_model(monkeypatch):
     model.train()
 
     for sample in train[:2]:
-        input_text, sentences = build_cluster_input(sample["documents"], tokenizer)
-        inputs = tokenizer(
-            input_text, truncation=True, padding="max_length", max_length=64, return_tensors="pt"
-        )
-        target = tokenizer(
-            sample["summary"], truncation=True, padding="max_length", max_length=16, return_tensors="pt"
-        )
-        labels = target["input_ids"].clone()
-        labels[labels == tokenizer.pad_token_id] = -100
-
-        oracle_labels = compute_oracle_labels(sentences, sample["summary"])
-        salience_labels = torch.tensor([oracle_labels], dtype=torch.float)
+        batch = prepare_batch(sample, tokenizer, device, max_input_length=64, max_summary_length=16)
 
         output = model(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            labels=labels,
-            salience_labels=salience_labels,
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            labels=batch["labels"],
+            salience_labels=batch["salience_labels"],
         )
         output["loss"].backward()
         optimizer.step()
